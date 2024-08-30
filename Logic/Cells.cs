@@ -12,6 +12,7 @@ public class Cells
     private readonly int _w;
     private readonly int _h;
     private bool _stepping;
+    private Cell _zerocell;
 
     public Cells(RenderWindow window, int w, int h)
     {
@@ -19,32 +20,38 @@ public class Cells
         _cells = new Cell[w, h];
         _w = w;
         _h = h;
-        _stepping = false;
+        _stepping = true;
+        _zerocell = new Cell(_window, 0, 0, 0, 1, 1);
         for (int x = 0; x < w; x++)
         {
             for (int y =0; y < h; y++)
                 _cells[x,y] = new Cell(_window, x, y, 0, w, h);
+        }
+        for (int x = 0; x < w; x++)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                for (int a = -1; a < 2; a++)
+                {
+                    for (int b = -1; b < 2; b++)
+                    {
+                        if ((x + a < 0) || (y + b < 0) || (x + a >= w) || (y + b >= h))
+                        {
+                            _cells[x, y].StoreNeighbour(a + 1, b + 1, _zerocell);
+                        }
+                        else
+                        {
+                            _cells[x, y].StoreNeighbour(a + 1, b + 1, _cells[x + a, y + b]);
+                        }
+                    }
+                }
+            }
         }
     }
 
     public void Draw()
     {
         foreach(Cell cell in _cells) cell.Draw();
-    }
-
-    private void UpdateNeighbours(int x, int y)
-    {
-        Neighbours neighbours = _cells[x, y]._neighbours;
-        neighbours.UpperLeft = x == 0 ? (byte)0 : (y == 0 ? (byte)0 : _cells[x - 1, y - 1].GetValue());
-        neighbours.Upper = y == 0 ? (byte)0 : _cells[x, y - 1].GetValue();
-        neighbours.UpperRight = x == _w - 1 ? (byte)0 : (y == 0 ? (byte)0 : _cells[x + 1, y - 1].GetValue());
-        neighbours.Left = x == 0 ? (byte)0 : _cells[x - 1, y].GetValue();
-        neighbours.Center = _cells[x, y].GetValue();
-        neighbours.Right = x == _w - 1 ? (byte)0 : _cells[x + 1, y].GetValue();
-        neighbours.LowerLeft = x == 0 ? (byte)0 : (y == _h - 1 ? (byte)0 : _cells[x - 1, y + 1].GetValue());
-        neighbours.Lower = y == _h - 1 ? (byte)0 : _cells[x, y + 1].GetValue();
-        neighbours.LowerRight = x == _w - 1 ? (byte)0 : (y == _h - 1 ? (byte)0 : _cells[x + 1, y + 1].GetValue());
-        _cells[x, y]._neighbours = neighbours;
     }
 
     public void Step()
@@ -56,13 +63,6 @@ public class Cells
             for (int y = 0; y < _h; y++)
             {
                 _cells[x, y].RefreshValue();
-            }
-        }
-        for (int x = 0; x < _w; x++)
-        {
-            for (int y = 0; y < _h; y++)
-            {
-                UpdateNeighbours(x, y);
             }
         }
         for (int x = 0; x < _w; x++)
